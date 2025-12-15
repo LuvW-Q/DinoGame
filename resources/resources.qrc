@@ -1,0 +1,32 @@
+<RCC>
+    <qresource prefix="/dino">
+        <file alias="DinoDead.png">Dino/DinoDead.png</file>
+        <file alias="DinoDuck1.png">Dino/DinoDuck1.png</file>
+        <file alias="DinoDuck2.png">Dino/DinoDuck2.png</file>
+        <file alias="DinoJump.png">Dino/DinoJump.png</file>
+        <file alias="DinoRun1.png">Dino/DinoRun1.png</file>
+        <file alias="DinoRun2.png">Dino/DinoRun2.png</file>
+        <file alias="DinoStart.png">Dino/DinoStart.png</file>
+    </qresource>
+
+    <qresource prefix="/bird">
+        <file alias="Bird1.png">Bird/Bird1.png</file>
+        <file alias="Bird2.png">Bird/Bird2.png</file>
+    </qresource>
+
+    <qresource prefix="/cactus">
+        <file alias="LargeCactus1.png">Cactus/LargeCactus1.png</file>
+        <file alias="LargeCactus2.png">Cactus/LargeCactus2.png</file>
+        <file alias="LargeCactus3.png">Cactus/LargeCactus3.png</file>
+        <file alias="SmallCactus1.png">Cactus/SmallCactus1.png</file>
+        <file alias="SmallCactus2.png">Cactus/SmallCactus2.png</file>
+        <file alias="SmallCactus3.png">Cactus/SmallCactus3.png</file>
+    </qresource>
+
+    <qresource prefix="/other">
+        <file alias="Cloud.png">Other/Cloud.png</file>
+        <file alias="GameOver.png">Other/GameOver.png</file>
+        <file alias="Reset.png">Other/Reset.png</file>
+        <file alias="Track.png">Other/Track.png</file>
+    </qresource>
+</RCC>

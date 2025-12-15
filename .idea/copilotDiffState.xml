@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/src/dino.h">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/src/dino.h" />
+              <option name="originalContent" value="#ifndef DINO_H&#10;#define DINO_H&#10;&#10;#include &lt;QObject&gt;&#10;#include &lt;QPixmap&gt;&#10;&#10;class QPainter;&#10;class QRect;&#10;&#10;/**&#10; * 简单的恐龙（玩家）类，负责绘制与基本物理（跳跃/下蹲）。&#10; */&#10;class Dino : public QObject {&#10;    Q_OBJECT&#10;public:&#10;    /**&#10;     * 构造函数。&#10;     * @param parent 所属的 QObject 父对象（可空）。&#10;     */&#10;    explicit Dino(QObject *parent = nullptr);&#10;&#10;    /**&#10;     * 在给定的 QPainter 上绘制恐龙。&#10;     * @param painter 用于绘制的画家对象（非空）。&#10;     */&#10;    void draw(QPainter *painter);&#10;&#10;    /**&#10;     * 每帧更新恐龙状态（位置、速度等）。&#10;     */&#10;    void update();&#10;&#10;    /**&#10;     * 触发跳跃（如果当前不在跳跃中）。&#10;     */&#10;    void jump();&#10;&#10;    /**&#10;     * 设置是否下蹲。&#10;     * @param ducking true 表示开始下蹲，false 表示结束下蹲。&#10;     */&#10;    void setDucking(bool ducking);&#10;&#10;    /**&#10;     * 返回用于碰撞检测的包围矩形（根据是否下蹲返回不同尺寸）。&#10;     */&#10;    [[nodiscard]] QRect boundingRect() const; // 用于碰撞检测（后续使用）&#10;private:&#10;    QPixmap dinoImg;&#10;    int x, y;&#10;    int vy; // 垂直速度&#10;    bool isJumping;&#10;    bool isDucking;&#10;    int groundY;&#10;    const int jumpSpeed = -16;&#10;    const int gravity = 1;&#10;};&#10;&#10;#endif // DINO_H&#10;" />
+              <option name="updatedContent" value="#ifndef DINO_H&#10;#define DINO_H&#10;&#10;#include &lt;QObject&gt;&#10;#include &lt;QPixmap&gt;&#10;&#10;class QPainter;&#10;class QRect;&#10;&#10;/**&#10; * 简单的恐龙（玩家）类，负责绘制与基本物理（跳跃/下蹲）。&#10; */&#10;class Dino : public QObject {&#10;    Q_OBJECT&#10;public:&#10;    /**&#10;     * 构造函数。&#10;     * @param parent 所属的 QObject 父对象（可空）。&#10;     */&#10;    explicit Dino(QObject *parent = nullptr);&#10;&#10;    /**&#10;     * 在给定的 QPainter 上绘制恐龙。&#10;     * @param painter 用于绘制的画家对象（非空）。&#10;     */&#10;    void draw(QPainter *painter);&#10;&#10;    /**&#10;     * 每帧更新恐龙状态（位置、速度等）。&#10;     */&#10;    void update();&#10;&#10;    /**&#10;     * 触发跳跃（如果当前不在跳跃中）。&#10;     */&#10;    void jump();&#10;&#10;    /**&#10;     * 设置是否下蹲。&#10;     * @param ducking true 表示开始下蹲，false 表示结束下蹲。&#10;     */&#10;    void setDucking(bool ducking);&#10;&#10;    /**&#10;     * 返回用于碰撞检测的包围矩形（根据是否下蹲返回不同尺寸）。&#10;     */&#10;    [[nodiscard]] QRect boundingRect() const; // 用于碰撞检测（后续使用）&#10;private:&#10;    QPixmap dinoImg;&#10;    QPixmap duckImg;&#10;    int x, y;&#10;    int vy; // 垂直速度&#10;    bool isJumping;&#10;    bool isDucking;&#10;    int groundY;&#10;    const int jumpSpeed = -16;&#10;    const int gravity = 1;&#10;};&#10;&#10;#endif // DINO_H" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>
