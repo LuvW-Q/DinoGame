@@ -5,6 +5,7 @@
 # IDE files
 *.user
 *.pro.user*
+.idea
 
 # macOS
 .DS_Store

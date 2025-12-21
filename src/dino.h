@@ -42,16 +42,40 @@ public:
     void setDucking(bool ducking);
 
     /**
+     * 标记游戏是否已开始（用于切换 Start 帧到跑/蹲动画）。
+     */
+    void setGameStarted(bool started);
+
+    /**
+     * 设置死亡状态（绘制死亡贴图）。
+     */
+    void setDead(bool dead);
+
+    /**
      * 返回用于碰撞检测的包围矩形（根据是否下蹲返回不同尺寸）。
      */
     [[nodiscard]] QRect boundingRect() const; // 用于碰撞检测（后续使用）
+
+    /**
+     * 重置恐龙到初始位置与状态。
+     */
+    void reset();
 private:
     QPixmap dinoImg;
     QPixmap duckImg;
+    QPixmap dinoImg2;
+    QPixmap duckImg2;
+    QPixmap deadImg;
+    QPixmap startImg;
+    QPixmap jumpImg;
     int x, y;
     int vy; // 垂直速度
     bool isJumping;
     bool isDucking;
+    bool isDead;
+    bool hasStarted;
+    bool animToggle;
+    int animCounter;
     int groundY;
     const int jumpSpeed = -16;
     const int gravity = 1;

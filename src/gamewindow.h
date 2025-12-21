@@ -3,7 +3,12 @@
 
 #include <QWidget>
 #include <QTimer>
+#include <QPixmap>
+#include <vector>
 #include "dino.h"
+#include "gameconfig.h"
+
+class QMouseEvent;
 
 class GameWindow : public QWidget {
     Q_OBJECT
@@ -33,19 +38,61 @@ protected:
      * 处理按键释放事件（用于结束下蹲）。
      */
     void keyReleaseEvent(QKeyEvent *event) override;
+
+    /**
+     * 处理鼠标点击事件（用于点击重开按钮）。
+     */
+    void mousePressEvent(QMouseEvent *event) override;
 private slots:
     /**
      * 游戏主循环：每帧更新世界并重绘。
      */
     void gameLoop();
 private:
+    struct Cactus {
+        QPixmap pix;
+        int x;
+        int y;
+        int w;
+        int h;
+    };
+
+    struct Cloud {
+        int x;
+        int y;
+    };
+
+    void resetGame();
+    void spawnCactus();
+    void updateCacti();
+    bool checkCollision() const;
+
     QTimer *timer;
     Dino *dino;
 
     // game state
     bool isRunning; // 游戏是否在运行（开始后为 true）
+    bool isGameOver; // 游戏是否结束
     int groundOffset; // 地面滚动偏移
     int speed; // 游戏速度（像素/帧）
+
+    // obstacles
+    std::vector<Cactus> cacti;
+    std::vector<Cloud> clouds;
+    int spawnCooldown; // 帧计数器，<=0 时生成
+    int spawnIntervalMin;
+    int spawnIntervalMax;
+    double cactusScale; // 缩放障碍物尺寸
+
+    // assets
+    QPixmap trackImg;
+    QPixmap gameOverImg;
+    QPixmap resetImg;
+    QPixmap cloudImg;
+    std::vector<QPixmap> smallCactusImgs;
+    std::vector<QPixmap> largeCactusImgs;
+
+    QRect resetRect; // 记录重开按钮的绘制区域
 };
 
 #endif // GAMEWINDOW_H
