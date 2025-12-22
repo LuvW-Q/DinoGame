@@ -38,7 +38,6 @@ GameWindow::GameWindow(QWidget *parent) : QWidget(parent) {
     speed = GameConfig::gameSpeed; // constant speed
     spawnIntervalMin = GameConfig::spawnIntervalMin; // frames
     spawnIntervalMax = GameConfig::spawnIntervalMax;
-    cactusScale = GameConfig::cactusScale; // 缩小障碍物尺寸
 
     // init clouds positions
     clouds.clear();
@@ -166,13 +165,12 @@ void GameWindow::keyReleaseEvent(QKeyEvent *event) {
  */
 void GameWindow::gameLoop() {
     if (isRunning && !isGameOver) {
-        // update world
         groundOffset += speed;
         dino->update();
         updateCacti();
         // move clouds slower for parallax
         for (auto &c : clouds) {
-            c.x -= speed / 3; // slower than ground
+            c.x -= speed / GameConfig::cloudSpeedDivisor;
         }
         // wrap clouds
         for (auto &c : clouds) {
@@ -207,10 +205,16 @@ void GameWindow::spawnCactus() {
     QPixmap pix = list[idx];
     if (pix.isNull()) return;
 
-    // scale down obstacle
-    if (cactusScale > 0.0 && cactusScale != 1.0) {
-        pix = pix.scaled(pix.width() * cactusScale, pix.height() * cactusScale, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    // random scale range
+    double scaleMin = useLarge ? GameConfig::cactusScaleLargeMin : GameConfig::cactusScaleSmallMin;
+    double scaleMax = useLarge ? GameConfig::cactusScaleLargeMax : GameConfig::cactusScaleSmallMax;
+    double scale = randomScale(scaleMin, scaleMax);
+    // special cap for LargeCactus3 to reduce width/height
+    if (useLarge && idx == 2) {
+        scale = std::min(scale, GameConfig::cactusScaleLarge3Cap);
     }
+
+    pix = pix.scaled(static_cast<int>(pix.width() * scale), static_cast<int>(pix.height() * scale), Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
     Cactus c;
     c.pix = pix;
@@ -227,7 +231,7 @@ void GameWindow::updateCacti() {
     spawnCooldown -= 1;
     if (spawnCooldown <= 0) {
         spawnCactus();
-        int interval = QRandomGenerator::global()->bounded(spawnIntervalMin, spawnIntervalMax + 1);
+        int interval = QRandomGenerator::global()->bounded(GameConfig::spawnIntervalMin, GameConfig::spawnIntervalMax + 1);
         spawnCooldown = interval;
     }
 
@@ -258,4 +262,11 @@ void GameWindow::mousePressEvent(QMouseEvent *event) {
         resetGame();
     }
     QWidget::mousePressEvent(event);
+}
+
+double GameWindow::randomScale(double min, double max) const {
+    if (min >= max) return min;
+    // use uniform double
+    double t = QRandomGenerator::global()->generateDouble();
+    return min + (max - min) * t;
 }

@@ -66,6 +66,7 @@ private:
     void spawnCactus();
     void updateCacti();
     bool checkCollision() const;
+    double randomScale(double min, double max) const;
 
     QTimer *timer;
     Dino *dino;
@@ -82,7 +83,6 @@ private:
     int spawnCooldown; // 帧计数器，<=0 时生成
     int spawnIntervalMin;
     int spawnIntervalMax;
-    double cactusScale; // 缩放障碍物尺寸
 
     // assets
     QPixmap trackImg;
