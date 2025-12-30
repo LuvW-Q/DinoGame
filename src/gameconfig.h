@@ -1,8 +1,6 @@
 #ifndef GAMECONFIG_H
 #define GAMECONFIG_H
 
-#include <QString>
-
 namespace GameConfig {
 // 加密配置
 const QString ENCRYPTION_KEY = "ee7d5971-c06e-485d-8b09-abae73aef66d";
@@ -28,6 +26,15 @@ constexpr double cactusScaleLargeMin = 0.58;
 constexpr double cactusScaleLargeMax = 0.75;
 constexpr double cactusScaleLarge3Cap = 0.62; // 特别压缩 LargeCactus3 宽度
 
+// 无齿翼龙（鸟类）障碍物
+constexpr int birdSpawnScoreThreshold = 500; // 2000 分开始生成
+constexpr double birdScaleMin = 0.35;
+constexpr double birdScaleMax = 0.5;  // 鸟类缩放较小，让其更容易躲避
+constexpr int birdHeightLow = 80;   // 低飞行高度（需要蹲下躲避）
+constexpr int birdHeightHigh = 100;  // 高飞行高度（需要跳跃躲避）
+constexpr int birdAnimationFrames = 12; // 鸟类飞行动画帧间隔
+constexpr int birdSpawnProbability = 30; // 在障碍物生成时，鸟出现的概率百分比（0-100）
+
 // 恐龙尺寸
 constexpr int dinoWidth = 44;
 constexpr int dinoHeight = 44;
@@ -41,6 +48,12 @@ constexpr int cloudCount = 5;
 constexpr int cloudYMin = 40;
 constexpr int cloudYMax = 140;
 constexpr int cloudSpeedDivisor = 3; // 云速 = 地速 / cloudSpeedDivisor
+
+// 时间与场景切换
+constexpr int dayNightCycleFrames = 3000; // 一个完整的昼夜周期帧数（约5分钟，60FPS）
+constexpr int dayDurationFrames = 1500;    // 白天持续帧数
+constexpr int nightDurationFrames = 1100;  // 黑夜持续帧数（不含过渡期）
+constexpr int transitionFrames = 200;     // 过渡期帧数（白天->黑夜 或 黑夜->白天）
 }
 
 #endif // GAMECONFIG_H

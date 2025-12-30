@@ -42,6 +42,11 @@ GameWindow::GameWindow(QWidget *parent) : QWidget(parent) {
         QPixmap(":/cactus/LargeCactus3.png")
     };
 
+    birdImgs = {
+        QPixmap(":/bird/Bird1.png"),
+        QPixmap(":/bird/Bird2.png")
+    };
+
     // init game state
     speed = GameConfig::gameSpeed; // constant speed
     spawnIntervalMin = GameConfig::spawnIntervalMin; // frames
@@ -49,6 +54,13 @@ GameWindow::GameWindow(QWidget *parent) : QWidget(parent) {
     score = 0;
     highScore = 0;
     loadHighScore(); // load saved high score from file
+
+    // init time tracking
+    gameFrameCount = 0;
+    isNight = false;
+    cyclePosition = 0;
+    dayNightTransitionAlpha = 0.0f;
+    currentBackgroundColor = QColor(255, 255, 255); // 初始为白色（白天）
 
     // init clouds positions
     clouds.clear();
@@ -75,14 +87,17 @@ GameWindow::~GameWindow() {
 void GameWindow::paintEvent(QPaintEvent *) {
     QPainter painter(this);
 
-    // background
-    painter.fillRect(rect(), QColor(255, 255, 255));
+    // background with current color (interpolates between day and night)
+    painter.fillRect(rect(), currentBackgroundColor);
 
-    // draw clouds (slow parallax scroll)
-    if (!cloudImg.isNull()) {
+    // draw clouds (slow parallax scroll) with alpha based on day-night cycle
+    float cloudAlpha = getCloudAlpha();
+    if (!cloudImg.isNull() && cloudAlpha > 0.001f) {
+        painter.setOpacity(cloudAlpha);
         for (const auto &c : clouds) {
             painter.drawPixmap(c.x, c.y, cloudImg);
         }
+        painter.setOpacity(1.0f); // reset opacity
     }
 
     // draw ground using track texture if valid, fallback to solid blocks
@@ -107,6 +122,11 @@ void GameWindow::paintEvent(QPaintEvent *) {
     // draw cacti
     for (const auto &c : cacti) {
         painter.drawPixmap(c.x, c.y, c.w, c.h, c.pix);
+    }
+
+    // draw birds
+    for (const auto &b : birds) {
+        painter.drawPixmap(b.x, b.y, b.w, b.h, b.pix);
     }
 
     // draw dino
@@ -194,8 +214,11 @@ void GameWindow::gameLoop() {
     if (isRunning && !isGameOver) {
         groundOffset += speed;
         score += GameConfig::scorePerFrame;
+        gameFrameCount++; // increment frame counter
+        updateDayNightCycle(); // update day-night cycle
         dino->update();
         updateCacti();
+        updateBirds(); // 更新鸟类障碍物
         // move clouds slower for parallax
         for (auto &c : clouds) {
             c.x -= speed / GameConfig::cloudSpeedDivisor;
@@ -228,8 +251,33 @@ void GameWindow::resetGame() {
     groundOffset = 0;
     score = 0;
     cacti.clear();
+    birds.clear(); // 清空鸟类列表
     spawnCooldown = spawnIntervalMin;
+    gameFrameCount = 0;
+    isNight = false;
+    cyclePosition = 0;
+    dayNightTransitionAlpha = 0.0f;
+    currentBackgroundColor = QColor(255, 255, 255); // 重置为白天
     dino->reset();
+}
+
+/**
+ * 统一的障碍物生成方法。
+ * 在 2000 分前仅生成仙人掌，2000 分后根据概率随机选择生成仙人掌或鸟类。
+ */
+void GameWindow::spawnObstacle() {
+    if (score >= GameConfig::birdSpawnScoreThreshold) {
+        // 2000 分及以上，根据概率随机选择
+        int rand = QRandomGenerator::global()->bounded(100);
+        if (rand < GameConfig::birdSpawnProbability) {
+            spawnBird(); // 30% 概率生成鸟
+        } else {
+            spawnCactus(); // 70% 概率生成仙人掌
+        }
+    } else {
+        // 2000 分以下，仅生成仙人掌
+        spawnCactus();
+    }
 }
 
 void GameWindow::spawnCactus() {
@@ -265,7 +313,7 @@ void GameWindow::updateCacti() {
     // spawn timer
     spawnCooldown -= 1;
     if (spawnCooldown <= 0) {
-        spawnCactus();
+        spawnObstacle(); // 统一的障碍物生成方法
         int interval = QRandomGenerator::global()->bounded(GameConfig::spawnIntervalMin, GameConfig::spawnIntervalMax + 1);
         spawnCooldown = interval;
     }
@@ -283,12 +331,23 @@ void GameWindow::updateCacti() {
 
 bool GameWindow::checkCollision() const {
     QRect dinoRect = dino->boundingRect();
+
+    // 检查与仙人掌的碰撞
     for (const auto &c : cacti) {
         QRect cactusRect(c.x, c.y, c.w, c.h);
         if (dinoRect.intersects(cactusRect)) {
             return true;
         }
     }
+
+    // 检查与鸟类的碰撞
+    for (const auto &b : birds) {
+        QRect birdRect(b.x, b.y, b.w, b.h);
+        if (dinoRect.intersects(birdRect)) {
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -408,6 +467,147 @@ int GameWindow::decryptScore(const QString &encrypted) {
     } catch (...) {
         return -1;
     }
+}
+
+/**
+ * 更新昼夜循环。
+ * 周期结构：
+ * - 白天：0 ~ dayDurationFrames
+ * - 过渡期（白天->黑夜）：dayDurationFrames ~ dayDurationFrames + transitionFrames
+ * - 黑夜：dayDurationFrames + transitionFrames ~ dayDurationFrames + 2*transitionFrames
+ * - 过渡期（黑夜->白天）：dayDurationFrames + 2*transitionFrames ~ dayNightCycleFrames
+ */
+void GameWindow::updateDayNightCycle() {
+    cyclePosition = gameFrameCount % GameConfig::dayNightCycleFrames;
+
+    // 计算当前是否处于过渡期以及过渡进度
+    int dayEnd = GameConfig::dayDurationFrames;
+    int nightTransitionStart = dayEnd;
+    int nightTransitionEnd = dayEnd + GameConfig::transitionFrames;
+    int nightEnd = nightTransitionEnd + GameConfig::nightDurationFrames;
+    int dayTransitionStart = nightEnd;
+    int dayTransitionEnd = dayTransitionStart + GameConfig::transitionFrames;
+
+    QColor dayColor(255, 255, 255);      // 白天：白色
+    QColor nightColor(100, 100, 120);    // 黑夜：深灰色
+
+    if (cyclePosition < nightTransitionStart) {
+        // 白天
+        isNight = false;
+        dayNightTransitionAlpha = 0.0f;
+        currentBackgroundColor = dayColor;
+    } else if (cyclePosition < nightTransitionEnd) {
+        // 白天 -> 黑夜过渡
+        isNight = false; // 过渡期仍认为处于白天状态（用于其他逻辑判断）
+        float progress = static_cast<float>(cyclePosition - nightTransitionStart) / GameConfig::transitionFrames;
+        dayNightTransitionAlpha = progress;
+        currentBackgroundColor = interpolateColor(dayColor, nightColor, progress);
+    } else if (cyclePosition < nightEnd) {
+        // 黑夜
+        isNight = true;
+        dayNightTransitionAlpha = 1.0f;
+        currentBackgroundColor = nightColor;
+    } else if (cyclePosition < dayTransitionEnd) {
+        // 黑夜 -> 白天过渡
+        isNight = true; // 过渡期仍认为处于黑夜状态（用于其他逻辑判断）
+        float progress = static_cast<float>(cyclePosition - dayTransitionStart) / GameConfig::transitionFrames;
+        dayNightTransitionAlpha = 1.0f - progress;
+        currentBackgroundColor = interpolateColor(nightColor, dayColor, progress);
+    } else {
+        // 周期循环，回到白天
+        isNight = false;
+        dayNightTransitionAlpha = 0.0f;
+        currentBackgroundColor = dayColor;
+    }
+}
+
+/**
+ * 线性插值两个颜色。
+ * @param from 起始颜色
+ * @param to 目标颜色
+ * @param alpha 插值进度（0.0 ~ 1.0）
+ * @return 插值后的颜色
+ */
+QColor GameWindow::interpolateColor(const QColor &from, const QColor &to, float alpha) const {
+    int r = static_cast<int>(from.red() * (1.0f - alpha) + to.red() * alpha);
+    int g = static_cast<int>(from.green() * (1.0f - alpha) + to.green() * alpha);
+    int b = static_cast<int>(from.blue() * (1.0f - alpha) + to.blue() * alpha);
+    return QColor(r, g, b);
+}
+
+/**
+ * 计算云朵的透明度。
+ * 在过渡期期间，云朵逐渐消失。
+ * @return 云朵透明度（0.0 ~ 1.0）
+ */
+float GameWindow::getCloudAlpha() const {
+    // 在白天为 1.0，在过渡期逐渐降低，在黑夜为 0.0
+    return 1.0f - dayNightTransitionAlpha;
+}
+
+/**
+ * 生成无齿翼龙（鸟类）障碍物。
+ * 随机选择两种飞行高度，并使用两帧动画循环飞行。
+ */
+void GameWindow::spawnBird() {
+    if (birdImgs.empty() || birdImgs[0].isNull()) return;
+
+    // 随机选择飞行高度（低或高）
+    bool isHighFlight = QRandomGenerator::global()->bounded(2) == 0;
+    int flightY = isHighFlight ? GameConfig::birdHeightHigh : GameConfig::birdHeightLow;
+
+    // 随机缩放
+    double scale = randomScale(GameConfig::birdScaleMin, GameConfig::birdScaleMax);
+
+    QPixmap pix = birdImgs[0]; // 初始使用第一帧
+    pix = pix.scaled(static_cast<int>(pix.width() * scale), static_cast<int>(pix.height() * scale),
+                     Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    Bird b;
+    b.pix = pix;
+    b.w = pix.width();
+    b.h = pix.height();
+    b.x = width();
+    b.y = flightY - b.h / 2; // 垂直居中于飞行高度
+    b.animationFrame = 0;
+    b.animationCounter = 0;
+
+    birds.push_back(b);
+}
+
+/**
+ * 更新鸟类障碍物位置和动画。
+ * 鸟类会平滑向左移动，并循环切换两帧动画。
+ */
+void GameWindow::updateBirds() {
+    // move birds
+    for (auto &b : birds) {
+        b.x -= speed;
+
+        // 更新动画帧
+        b.animationCounter++;
+        if (b.animationCounter >= GameConfig::birdAnimationFrames) {
+            b.animationCounter = 0;
+            b.animationFrame = 1 - b.animationFrame; // 在 0 和 1 之间切换
+
+            // 更新图片
+            if (!birdImgs[b.animationFrame].isNull()) {
+                double scale = static_cast<double>(b.w) / birdImgs[0].width();
+                QPixmap newPix = birdImgs[b.animationFrame];
+                newPix = newPix.scaled(static_cast<int>(newPix.width() * scale),
+                                       static_cast<int>(newPix.height() * scale),
+                                       Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                b.pix = newPix;
+                // 保持宽度一致（高度可能略有变化）
+                b.h = newPix.height();
+            }
+        }
+    }
+
+    // remove off-screen birds
+    birds.erase(std::remove_if(birds.begin(), birds.end(), [&](const Bird &b){
+        return b.x + b.w < 0;
+    }), birds.end());
 }
 
 

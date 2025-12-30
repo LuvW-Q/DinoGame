@@ -3,11 +3,8 @@
 
 #include <QWidget>
 #include <QTimer>
-#include <QPixmap>
-#include <QString>
 #include <vector>
 #include "dino.h"
-#include "gameconfig.h"
 
 class QMouseEvent;
 
@@ -58,20 +55,36 @@ private:
         int h;
     };
 
+    struct Bird {
+        QPixmap pix;
+        int x;
+        int y;
+        int w;
+        int h;
+        int animationFrame; // 当前动画帧（0 或 1）
+        int animationCounter; // 动画计数器
+    };
+
     struct Cloud {
         int x;
         int y;
     };
 
     void resetGame();
+    void spawnObstacle(); // 统一的障碍物生成方法
     void spawnCactus();
+    void spawnBird();
     void updateCacti();
+    void updateBirds();
     bool checkCollision() const;
     double randomScale(double min, double max) const;
     void loadHighScore();
     void saveHighScore();
     QString encryptScore(int score);
     int decryptScore(const QString &encrypted);
+    void updateDayNightCycle();
+    QColor interpolateColor(const QColor &from, const QColor &to, float alpha) const;
+    float getCloudAlpha() const;
 
     QTimer *timer;
     Dino *dino;
@@ -84,8 +97,16 @@ private:
     int score; // 当前分数
     int highScore; // 历史最高分
 
+    // time and day-night cycle
+    int gameFrameCount; // 总游戏帧数计数
+    bool isNight; // 当前是否为黑夜
+    int cyclePosition; // 昼夜周期内的位置（0 到 dayNightCycleFrames）
+    float dayNightTransitionAlpha; // 白天-黑夜过渡进度（0.0 - 1.0）
+    QColor currentBackgroundColor; // 当前背景颜色
+
     // obstacles
     std::vector<Cactus> cacti;
+    std::vector<Bird> birds;
     std::vector<Cloud> clouds;
     int spawnCooldown; // 帧计数器，<=0 时生成
     int spawnIntervalMin;
@@ -98,6 +119,7 @@ private:
     QPixmap cloudImg;
     std::vector<QPixmap> smallCactusImgs;
     std::vector<QPixmap> largeCactusImgs;
+    std::vector<QPixmap> birdImgs; // 鸟类的两帧动画图片
 
     QRect resetRect; // 记录重开按钮的绘制区域
 };
