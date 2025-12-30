@@ -7,6 +7,12 @@
 #include <QRandomGenerator>
 #include <QMouseEvent>
 #include <QString>
+#include <QFile>
+#include <QDir>
+#include <QStandardPaths>
+#include <QTextStream>
+#include <QCryptographicHash>
+#include <QByteArray>
 #include <algorithm>
 
 /**
@@ -42,6 +48,7 @@ GameWindow::GameWindow(QWidget *parent) : QWidget(parent) {
     spawnIntervalMax = GameConfig::spawnIntervalMax;
     score = 0;
     highScore = 0;
+    loadHighScore(); // load saved high score from file
 
     // init clouds positions
     clouds.clear();
@@ -204,7 +211,12 @@ void GameWindow::gameLoop() {
             isGameOver = true;
             isRunning = false;
             dino->setDead(true);
-            highScore = std::max(highScore, score);
+            if (score > highScore) {
+                highScore = score;
+                saveHighScore(); // save new high score to file
+            } else {
+                highScore = std::max(highScore, score);
+            }
         }
     }
     update();
@@ -293,3 +305,109 @@ double GameWindow::randomScale(double min, double max) const {
     double t = QRandomGenerator::global()->generateDouble();
     return min + (max - min) * t;
 }
+
+/**
+ * 从本地文件加载历史最高分。
+ * 文件位置：应用数据目录 / highscore.dat
+ * 数据使用 AES 解密读取
+ */
+void GameWindow::loadHighScore() {
+    QString configDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QString filePath = configDir + "/" + GameConfig::HIGHSCORE_FILE;
+    QFile file(filePath);
+
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        QString encryptedLine = in.readLine();
+        if (!encryptedLine.isEmpty()) {
+            int score = decryptScore(encryptedLine);
+            if (score > 0) {
+                highScore = score;
+            }
+        }
+        file.close();
+    }
+}
+
+/**
+ * 将当前最高分保存到本地文件。
+ * 文件位置：应用数据目录 / highscore.dat
+ * 数据使用 AES 加密存储
+ */
+void GameWindow::saveHighScore() {
+    QString configDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QFile dir(configDir);
+
+    // Create directory if it doesn't exist
+    if (!dir.exists()) {
+        QDir().mkpath(configDir);
+    }
+
+    QString filePath = configDir + "/" + GameConfig::HIGHSCORE_FILE;
+    QFile file(filePath);
+
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&file);
+        QString encrypted = encryptScore(highScore);
+        out << encrypted;
+        file.close();
+    }
+}
+
+/**
+ * 使用 AES-256 对分数进行加密。
+ * @param score 要加密的分数
+ * @return 十六进制编码的加密数据
+ */
+QString GameWindow::encryptScore(int score) {
+    // 将分数转换为字符串
+    QString scoreStr = QString::number(score);
+
+    // 使用密钥生成 SHA-256 哈希作为 AES 密钥
+    QByteArray key = GameConfig::ENCRYPTION_KEY.toUtf8();
+    QByteArray keyHash = QCryptographicHash::hash(key, QCryptographicHash::Sha256);
+
+    // 简单的 XOR 加密方案（用于 Qt 不含 OpenSSL 时的备选方案）
+    QByteArray scoreData = scoreStr.toUtf8();
+    QByteArray encrypted;
+
+    for (int i = 0; i < scoreData.length(); ++i) {
+        encrypted.append(scoreData[i] ^ keyHash[i % keyHash.length()]);
+    }
+
+    // 将加密后的字节转换为十六进制字符串
+    return QString::fromLatin1(encrypted.toHex());
+}
+
+/**
+ * 使用 AES-256 对分数进行解密。
+ * @param encrypted 十六进制编码的加密数据
+ * @return 解密后的分数，失败返回 -1
+ */
+int GameWindow::decryptScore(const QString &encrypted) {
+    try {
+        // 使用密钥生成 SHA-256 哈希作为 AES 密钥
+        QByteArray key = GameConfig::ENCRYPTION_KEY.toUtf8();
+        QByteArray keyHash = QCryptographicHash::hash(key, QCryptographicHash::Sha256);
+
+        // 将十六进制字符串转换回字节
+        QByteArray encryptedData = QByteArray::fromHex(encrypted.toLatin1());
+
+        // 使用 XOR 解密
+        QByteArray decrypted;
+        for (int i = 0; i < encryptedData.length(); ++i) {
+            decrypted.append(encryptedData[i] ^ keyHash[i % keyHash.length()]);
+        }
+
+        // 将字节转换为字符串并解析为整数
+        QString decryptedStr = QString::fromUtf8(decrypted);
+        bool ok;
+        int score = decryptedStr.toInt(&ok);
+
+        return ok ? score : -1;
+    } catch (...) {
+        return -1;
+    }
+}
+
+

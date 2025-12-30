@@ -1,7 +1,12 @@
 #ifndef GAMECONFIG_H
 #define GAMECONFIG_H
 
+#include <QString>
+
 namespace GameConfig {
+// 加密配置
+const QString ENCRYPTION_KEY = "ee7d5971-c06e-485d-8b09-abae73aef66d";
+const QString HIGHSCORE_FILE = "highscore.dat";
 // 窗口与地面
 constexpr int windowWidth = 800;
 constexpr int windowHeight = 300;

@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QTimer>
 #include <QPixmap>
+#include <QString>
 #include <vector>
 #include "dino.h"
 #include "gameconfig.h"
@@ -67,6 +68,10 @@ private:
     void updateCacti();
     bool checkCollision() const;
     double randomScale(double min, double max) const;
+    void loadHighScore();
+    void saveHighScore();
+    QString encryptScore(int score);
+    int decryptScore(const QString &encrypted);
 
     QTimer *timer;
     Dino *dino;
