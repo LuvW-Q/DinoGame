@@ -76,6 +76,8 @@ private:
     bool isGameOver; // 游戏是否结束
     int groundOffset; // 地面滚动偏移
     int speed; // 游戏速度（像素/帧）
+    int score; // 当前分数
+    int highScore; // 历史最高分
 
     // obstacles
     std::vector<Cactus> cacti;

@@ -3,8 +3,10 @@
 #include <QPainter>
 #include <QKeyEvent>
 #include <QFont>
+#include <QFontMetrics>
 #include <QRandomGenerator>
 #include <QMouseEvent>
+#include <QString>
 #include <algorithm>
 
 /**
@@ -38,6 +40,8 @@ GameWindow::GameWindow(QWidget *parent) : QWidget(parent) {
     speed = GameConfig::gameSpeed; // constant speed
     spawnIntervalMin = GameConfig::spawnIntervalMin; // frames
     spawnIntervalMax = GameConfig::spawnIntervalMax;
+    score = 0;
+    highScore = 0;
 
     // init clouds positions
     clouds.clear();
@@ -100,6 +104,22 @@ void GameWindow::paintEvent(QPaintEvent *) {
 
     // draw dino
     dino->draw(&painter);
+
+    // draw score and high score on the top-right
+    QFont scoreFont = painter.font();
+    scoreFont.setPointSize(14);
+    painter.setFont(scoreFont);
+    QFontMetrics fm(scoreFont);
+    QString scoreText = QString("%1").arg(score, 5, 10, QChar('0'));
+    QString hiText = QString("HI %1").arg(highScore, 5, 10, QChar('0'));
+    int margin = 16;
+    int yText = margin + fm.ascent();
+    int scoreWidth = fm.horizontalAdvance(scoreText);
+    int hiWidth = fm.horizontalAdvance(hiText);
+    int xScore = width() - margin - scoreWidth;
+    int xHi = xScore - margin - hiWidth;
+    painter.drawText(xHi, yText, hiText);
+    painter.drawText(xScore, yText, scoreText);
 
     if (!isRunning && !isGameOver) {
         // start screen overlay
@@ -166,6 +186,7 @@ void GameWindow::keyReleaseEvent(QKeyEvent *event) {
 void GameWindow::gameLoop() {
     if (isRunning && !isGameOver) {
         groundOffset += speed;
+        score += GameConfig::scorePerFrame;
         dino->update();
         updateCacti();
         // move clouds slower for parallax
@@ -183,6 +204,7 @@ void GameWindow::gameLoop() {
             isGameOver = true;
             isRunning = false;
             dino->setDead(true);
+            highScore = std::max(highScore, score);
         }
     }
     update();
@@ -192,6 +214,7 @@ void GameWindow::resetGame() {
     isRunning = false;
     isGameOver = false;
     groundOffset = 0;
+    score = 0;
     cacti.clear();
     spawnCooldown = spawnIntervalMin;
     dino->reset();

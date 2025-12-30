@@ -11,6 +11,7 @@ constexpr int dinoGroundY = 220;    // 恐龙站立高度（dino.cpp 使用）
 
 // 速度配置
 constexpr int gameSpeed = 6;        // 地面/障碍物移动速度（像素/帧）
+constexpr int scorePerFrame = 1;    // 记分速度（每帧增加的分数）
 
 // 障碍物
 constexpr int spawnIntervalMin = 70;  // 生成间隔下限（帧）
