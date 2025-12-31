@@ -88,16 +88,24 @@ void Dino::setDucking(bool ducking) {
     }
 }
 
+/**
+ * 设置游戏开始状态（用于切换起始帧）。
+ * @param started true 表示已开始。
+ */
 void Dino::setGameStarted(bool started) {
     hasStarted = started;
 }
 
+/**
+ * 设置死亡状态，切换死亡贴图。
+ * @param dead true 表示死亡。
+ */
 void Dino::setDead(bool dead) {
     isDead = dead;
 }
 
 /**
- * 返回用于碰撞检测的包围矩形。
+ * 返回当前用于碰撞检测的包围矩形（含收缩边距）。
  */
 QRect Dino::boundingRect() const {
     if (isDucking) {
@@ -113,7 +121,7 @@ QRect Dino::boundingRect() const {
 }
 
 /**
- * 重置恐龙状态，以便重新开始游戏。
+ * 重置恐龙状态到初始值。
  */
 void Dino::reset() {
     isJumping = false;
@@ -126,6 +134,11 @@ void Dino::reset() {
     y = groundY;
 }
 
+/**
+ * 获取当前绘制帧与目标矩形，用于像素级碰撞。
+ * @param outPixmap 输出：当前贴图。
+ * @param outRect 输出：当前绘制矩形（屏幕坐标）。
+ */
 void Dino::currentFrame(QPixmap &outPixmap, QRect &outRect) const {
     QPixmap current;
     QRect dest;
