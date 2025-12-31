@@ -55,6 +55,7 @@ public:
      * 返回用于碰撞检测的包围矩形（根据是否下蹲返回不同尺寸）。
      */
     [[nodiscard]] QRect boundingRect() const; // 用于碰撞检测（后续使用）
+    void currentFrame(QPixmap &outPixmap, QRect &outRect) const; // 获取当前绘制帧及目标矩形（用于像素级碰撞）
 
     /**
      * 重置恐龙到初始位置与状态。

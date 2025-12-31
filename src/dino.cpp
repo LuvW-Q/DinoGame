@@ -125,3 +125,28 @@ void Dino::reset() {
     vy = 0;
     y = groundY;
 }
+
+void Dino::currentFrame(QPixmap &outPixmap, QRect &outRect) const {
+    QPixmap current;
+    QRect dest;
+
+    if (isDead) {
+        current = deadImg;
+        dest = QRect(x, y, GameConfig::dinoWidth, GameConfig::dinoHeight);
+    } else if (!hasStarted) {
+        current = startImg;
+        dest = QRect(x, y, GameConfig::dinoWidth, GameConfig::dinoHeight);
+    } else if (isJumping) {
+        current = jumpImg;
+        dest = QRect(x, y, GameConfig::dinoWidth, GameConfig::dinoHeight);
+    } else if (isDucking) {
+        current = animToggle ? duckImg2 : duckImg;
+        dest = QRect(x, y + GameConfig::dinoDuckYOffset, GameConfig::dinoWidth, GameConfig::dinoDuckHeight);
+    } else {
+        current = animToggle ? dinoImg2 : dinoImg;
+        dest = QRect(x, y, GameConfig::dinoWidth, GameConfig::dinoHeight);
+    }
+
+    outPixmap = current;
+    outRect = dest;
+}

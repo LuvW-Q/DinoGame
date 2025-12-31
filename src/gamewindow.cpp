@@ -330,21 +330,66 @@ void GameWindow::updateCacti() {
 }
 
 bool GameWindow::checkCollision() const {
+    // 先用矩形快速判定（减少像素级检测开销）
     QRect dinoRect = dino->boundingRect();
+    QPixmap dinoPix;
+    QRect dinoDrawRect;
+    dino->currentFrame(dinoPix, dinoDrawRect);
+    QImage dinoImg = dinoPix.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
 
-    // 检查与仙人掌的碰撞
+    // 检查与仙人掌的碰撞：先粗判，再像素级判定
     for (const auto &c : cacti) {
         QRect cactusRect(c.x, c.y, c.w, c.h);
-        if (dinoRect.intersects(cactusRect)) {
-            return true;
+        if (!dinoRect.intersects(cactusRect)) continue; // 粗判不重叠直接跳过
+
+        QRect overlap = dinoDrawRect.intersected(cactusRect);
+        if (overlap.isEmpty()) continue;
+
+        int dinoOffsetX = overlap.x() - dinoDrawRect.x();
+        int dinoOffsetY = overlap.y() - dinoDrawRect.y();
+        int cactusOffsetX = overlap.x() - c.x;
+        int cactusOffsetY = overlap.y() - c.y;
+
+        QImage cactusImg = c.pix.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+
+        for (int y = 0; y < overlap.height(); ++y) {
+            const QRgb *dinoScan = reinterpret_cast<const QRgb*>(dinoImg.constScanLine(dinoOffsetY + y));
+            const QRgb *cactusScan = reinterpret_cast<const QRgb*>(cactusImg.constScanLine(cactusOffsetY + y));
+            for (int x = 0; x < overlap.width(); ++x) {
+                QRgb dinoPixel = dinoScan[dinoOffsetX + x];
+                QRgb cactusPixel = cactusScan[cactusOffsetX + x];
+                if (qAlpha(dinoPixel) > 0 && qAlpha(cactusPixel) > 0) {
+                    return true; // 像素级重叠
+                }
+            }
         }
     }
 
-    // 检查与鸟类的碰撞
+    // 检查与鸟类的碰撞：先粗判，再像素级判定
     for (const auto &b : birds) {
         QRect birdRect(b.x, b.y, b.w, b.h);
-        if (dinoRect.intersects(birdRect)) {
-            return true;
+        if (!dinoRect.intersects(birdRect)) continue; // 粗判不重叠直接跳过
+
+        QRect overlap = dinoDrawRect.intersected(birdRect);
+        if (overlap.isEmpty()) continue;
+
+        int dinoOffsetX = overlap.x() - dinoDrawRect.x();
+        int dinoOffsetY = overlap.y() - dinoDrawRect.y();
+        int birdOffsetX = overlap.x() - b.x;
+        int birdOffsetY = overlap.y() - b.y;
+
+        QImage birdImg = b.pix.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+
+        for (int y = 0; y < overlap.height(); ++y) {
+            const QRgb *dinoScan = reinterpret_cast<const QRgb*>(dinoImg.constScanLine(dinoOffsetY + y));
+            const QRgb *birdScan = reinterpret_cast<const QRgb*>(birdImg.constScanLine(birdOffsetY + y));
+            for (int x = 0; x < overlap.width(); ++x) {
+                QRgb dinoPixel = dinoScan[dinoOffsetX + x];
+                QRgb birdPixel = birdScan[birdOffsetX + x];
+                if (qAlpha(dinoPixel) > 0 && qAlpha(birdPixel) > 0) {
+                    return true; // 像素级重叠
+                }
+            }
         }
     }
 
@@ -552,7 +597,7 @@ float GameWindow::getCloudAlpha() const {
 void GameWindow::spawnBird() {
     if (birdImgs.empty() || birdImgs[0].isNull()) return;
 
-    // 随机选择飞行高度（低或高）
+    // 随机选择飞行高度（低或高）——此高度表示“中心”距地面的距离
     bool isHighFlight = QRandomGenerator::global()->bounded(2) == 0;
     int flightY = isHighFlight ? GameConfig::birdHeightHigh : GameConfig::birdHeightLow;
 
@@ -568,7 +613,8 @@ void GameWindow::spawnBird() {
     b.w = pix.width();
     b.h = pix.height();
     b.x = width();
-    b.y = flightY - b.h / 2; // 垂直居中于飞行高度
+    int groundBase = GameConfig::groundY + GameConfig::groundAlignOffset; // 地面基准线（与仙人掌底部一致）
+    b.y = groundBase - flightY - b.h / 2; // 将鸟的中心放在距地面 flightY 的位置
     b.animationFrame = 0;
     b.animationCounter = 0;
 

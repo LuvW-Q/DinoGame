@@ -27,11 +27,12 @@ constexpr double cactusScaleLargeMax = 0.75;
 constexpr double cactusScaleLarge3Cap = 0.62; // 特别压缩 LargeCactus3 宽度
 
 // 无齿翼龙（鸟类）障碍物
+// birdHeight* 现表示：鸟的“中心”距地面的像素距离，越小越贴近地面
 constexpr int birdSpawnScoreThreshold = 500; // 2000 分开始生成
 constexpr double birdScaleMin = 0.35;
 constexpr double birdScaleMax = 0.5;  // 鸟类缩放较小，让其更容易躲避
-constexpr int birdHeightLow = 80;   // 低飞行高度（需要蹲下躲避）
-constexpr int birdHeightHigh = 100;  // 高飞行高度（需要跳跃躲避）
+constexpr int birdHeightLow = 20;   // 低飞行高度（相对地面）
+constexpr int birdHeightHigh = 60;  // 高飞行高度（相对地面）
 constexpr int birdAnimationFrames = 12; // 鸟类飞行动画帧间隔
 constexpr int birdSpawnProbability = 30; // 在障碍物生成时，鸟出现的概率百分比（0-100）
 
@@ -40,8 +41,8 @@ constexpr int dinoWidth = 44;
 constexpr int dinoHeight = 44;
 constexpr int dinoDuckHeight = 24;
 constexpr int dinoDuckYOffset = 20;
-constexpr int collisionInsetX = 6; // 碰撞矩形水平方向向内收缩像素
-constexpr int collisionInsetY = 10; // 碰撞矩形竖直方向向内收缩像素
+constexpr int collisionInsetX = 4; // 碰撞矩形水平方向向内收缩像素（收缩更小避免漏判）
+constexpr int collisionInsetY = 4; // 碰撞矩形竖直方向向内收缩像素（收缩更小避免漏判）
 
 // 背景云朵
 constexpr int cloudCount = 5;
