@@ -86,3 +86,4 @@ cmake --build .
 ```zsh
 cmake .. -DCMAKE_PREFIX_PATH="/path/to/Qt/6.6.2/clang_64"
 ```
+

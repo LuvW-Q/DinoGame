@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 
 # Require Qt6
 find_package(Qt6 COMPONENTS Core Gui Widgets REQUIRED)
+find_package(Qt6 COMPONENTS Multimedia REQUIRED)
 
 # Source files (keep resources separately)
 set(SRC_FILES
@@ -21,7 +22,7 @@ add_executable(${PROJECT_NAME} ${SRC_FILES} ${RCC_SRCS})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 # Link Qt6 libraries
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Multimedia)
 
 # Enable automatic Qt tools
 set_target_properties(${PROJECT_NAME} PROPERTIES

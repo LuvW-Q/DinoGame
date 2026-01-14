@@ -4,6 +4,8 @@
 #include <QRandomGenerator>
 #include <QMouseEvent>
 #include <QFile>
+#include <QAudioOutput>
+#include <QMediaPlayer>
 #include <cmath>
 #include <algorithm>
 
@@ -37,6 +39,13 @@ GameWindow::GameWindow(QWidget* parent)
     connect(timer, &QTimer::timeout, this, &GameWindow::gameLoop);
     timer->start(16); // ~60 FPS tick, 具体步长由 deltaTime 决定
     setFocusPolicy(Qt::StrongFocus);
+
+    // 音效：跳跃（使用 MediaPlayer 以兼容 mp3 解码）
+    jumpPlayer = new QMediaPlayer(this);
+    jumpAudio = new QAudioOutput(this);
+    jumpPlayer->setAudioOutput(jumpAudio);
+    jumpAudio->setVolume(0.6);
+    jumpPlayer->setSource(QUrl(QStringLiteral("qrc:/audio/Jump.mp3")));
 
     // assets
     trackImg = QPixmap(":/other/Track.png");
@@ -108,7 +117,7 @@ void GameWindow::paintEvent(QPaintEvent*) {
         painter.save();
         painter.setOpacity(getCloudAlpha());
         for (const auto& c : clouds) {
-            painter.drawPixmap(c.x, c.y, cloudImg);
+            painter.drawPixmap(static_cast<int>(std::lround(c.x)), static_cast<int>(std::lround(c.y)), cloudImg);
         }
         painter.restore();
     }
@@ -118,7 +127,7 @@ void GameWindow::paintEvent(QPaintEvent*) {
     if (!trackImg.isNull()) {
         int w = trackImg.width();
         int h = trackImg.height();
-        int xStart = -(static_cast<int>(groundOffset) % w);
+        int xStart = -(static_cast<int>(std::lround(groundOffset)) % w);
         for (int x = xStart; x < width(); x += w) {
             painter.drawPixmap(x, groundY - h + GameConfig::groundAlignOffset, trackImg); // 微调对齐
         }
@@ -127,7 +136,7 @@ void GameWindow::paintEvent(QPaintEvent*) {
         painter.setBrush(QColor(83, 83, 83));
         painter.setPen(Qt::NoPen);
         int tileW = 40;
-        int xStart = -(static_cast<int>(groundOffset) % tileW);
+        int xStart = -(static_cast<int>(std::lround(groundOffset)) % tileW);
         for (int x = xStart; x < width(); x += tileW) {
             painter.drawRect(x, groundY, tileW, height() - groundY);
         }
@@ -135,10 +144,10 @@ void GameWindow::paintEvent(QPaintEvent*) {
 
     // 绘制仙人掌
     for (const auto& c : cacti) {
-        painter.drawPixmap(c.x, c.y, c.w, c.h, c.pix);
+        painter.drawPixmap(static_cast<int>(std::lround(c.x)), static_cast<int>(std::lround(c.y)), c.w, c.h, c.pix);
     }
     for (const auto& b : birds) {
-        painter.drawPixmap(b.x, b.y, b.w, b.h, b.pix);
+        painter.drawPixmap(static_cast<int>(std::lround(b.x)), static_cast<int>(std::lround(b.y)), b.w, b.h, b.pix);
     }
 
     // 绘制恐龙
@@ -208,6 +217,10 @@ void GameWindow::keyPressEvent(QKeyEvent* event) {
         }
         else if (!isGameOver) {
             dino->jump();
+            if (jumpPlayer) {
+                jumpPlayer->stop();
+                jumpPlayer->play();
+            }
         }
         else {
             // restart
@@ -271,7 +284,7 @@ void GameWindow::gameLoop() {
         // 云朵视差效果：云朵速度为地面速度的三分之一
         const double cloudSpeed = speedPxPerSec / GameConfig::cloudSpeedDivisor;
         for (auto& c : clouds) {
-            c.x -= static_cast<int>(std::lround(cloudSpeed * deltaSeconds));
+            c.x -= cloudSpeed * deltaSeconds;
         }
         // 云朵循环：超出左侧时重置到右侧，随机Y位置
         for (auto& c : clouds) {
@@ -313,6 +326,7 @@ void GameWindow::resetGame() {
     birds.clear();
     spawnCooldownMs = spawnIntervalMinMs;
     dino->reset();
+    if (jumpPlayer) jumpPlayer->stop();
     lastFrameMs = frameTimer.restart();
 }
 
@@ -363,7 +377,7 @@ void GameWindow::updateCacti(double deltaSeconds) {
 
     // 移动仙人掌
     for (auto& c : cacti) {
-        c.x -= static_cast<int>(std::lround(speedPxPerSec * deltaSeconds));
+        c.x -= speedPxPerSec * deltaSeconds;
     }
 
     // 移除越界仙人掌
@@ -383,7 +397,7 @@ void GameWindow::updateBirds(double deltaSeconds) {
     int frameAdvance = std::max(1, static_cast<int>(std::lround(deltaSeconds * 60.0)));
 
     for (auto &b : birds) {
-        b.x -= static_cast<int>(std::lround(speedPxPerSec * deltaSeconds));
+        b.x -= speedPxPerSec * deltaSeconds;
 
         b.animationCounter += frameAdvance;
         if (b.animationCounter >= animInterval) {
@@ -406,7 +420,7 @@ bool GameWindow::checkCollision() const {
     // 矩形粗判
     QRect dinoRect = dino->boundingRect();
     for (const auto& c : cacti) {
-        QRect cactusRect(c.x, c.y, c.w, c.h);
+        QRect cactusRect(static_cast<int>(std::lround(c.x)), static_cast<int>(std::lround(c.y)), c.w, c.h);
         if (!dinoRect.intersects(cactusRect)) {
             continue;
         }
@@ -420,7 +434,7 @@ bool GameWindow::checkCollision() const {
         }
     }
     for (const auto& b : birds) {
-        QRect birdRect(b.x, b.y, b.w, b.h);
+        QRect birdRect(static_cast<int>(std::lround(b.x)), static_cast<int>(std::lround(b.y)), b.w, b.h);
         if (!dinoRect.intersects(birdRect)) continue;
         QPixmap dinoPix;
         QRect dinoDrawRect;

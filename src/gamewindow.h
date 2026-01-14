@@ -4,6 +4,8 @@
 #include <QWidget>
 #include <QTimer>
 #include <QPixmap>
+#include <QMediaPlayer>
+#include <QAudioOutput>
 #include <QElapsedTimer>
 #include <vector>
 #include "dino.h"
@@ -56,16 +58,16 @@ private slots:
 private:
     struct Cactus {
         QPixmap pix; // 仙人掌贴图
-        int x;       // 左上角 X
-        int y;       // 左上角 Y
+        double x;    // 左上角 X
+        double y;    // 左上角 Y
         int w;       // 宽度
         int h;       // 高度
     };
 
     struct Bird {
         QPixmap pix; // 鸟当前帧贴图
-        int x;
-        int y;
+        double x;
+        double y;
         int w;
         int h;
         int animationFrame;   // 当前动画帧索引（0/1）
@@ -73,8 +75,8 @@ private:
     };
 
     struct Cloud {
-        int x;
-        int y;
+        double x;
+        double y;
     };
 
     /** 重置游戏到初始状态。 */
@@ -193,6 +195,8 @@ private:
     std::vector<QPixmap> smallCactusImgs;
     std::vector<QPixmap> largeCactusImgs;
     std::vector<QPixmap> birdImgs; // 鸟类两帧动画
+    QMediaPlayer *jumpPlayer = nullptr; // 跳跃音效播放器
+    QAudioOutput *jumpAudio = nullptr;  // 跳跃音效输出
 
     QRect resetRect; // 重开按钮绘制区域
     QElapsedTimer frameTimer; // 用于计算 delta time

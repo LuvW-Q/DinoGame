@@ -29,4 +29,8 @@
         <file alias="Reset.png">Other/Reset.png</file>
         <file alias="Track.png">Other/Track.png</file>
     </qresource>
+
+    <qresource prefix="/audio">
+        <file alias="Jump.mp3">Audio/Jump.mp3</file>
+    </qresource>
 </RCC>
